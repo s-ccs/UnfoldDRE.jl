@@ -4,12 +4,6 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 77a0d9f9-82e3-464a-916c-74e4315ecbea
-begin # only needed for WGLMakie but doesnt hurt
-	using JSServe
-	Page()
-end;
-
 # ╔═╡ 6261439e-4612-11ec-0a26-cbe01fd4243b
 begin
 	#using Pkg
@@ -48,6 +42,7 @@ end
 # ╔═╡ 5caffa8b-f433-4ae7-b131-7bc3c158395d
 begin
 	#channel = "Oz" #Index 31;
+	# @Anmol Note: you probably want all channels here, just remove the picks=... part
 	channel_list = ["Oz"]
 	data = raw.get_data(picks=channel_list).*10^6;
 end
@@ -89,6 +84,61 @@ eff = Unfold.effects(Dict(:sac_amplitude=>1:5),model_fit)
 # ╔═╡ 6e1b5e54-86b9-4d3d-b898-bca4402bef1d
 plot_results(eff,color=:sac_amplitude)
 
+# ╔═╡ 5ba473c5-9d56-470a-87a8-d26d387bc58e
+md"""
+## Generatig U and data epochs
+"""
+
+# ╔═╡ 12d98571-e4da-4f8f-92a7-d33d6c069490
+begin
+f_simple = @formula 0~1 + sac_amplitude + fix_avgpos_x + fix_avgpos_y	; 
+b_short = firbasis(τ=(0,0),sfreq=sfreq,name="fixation");
+
+τ = (-0.5, 1)
+# generate epoched data
+
+end
+
+
+# ╔═╡ 107f91f1-0159-4eae-ad78-2f70f2363dad
+begin
+	
+# generate continuous designmatrix 
+	ufmodel = UnfoldLinearModelContinuousTime(Dict("fixation"=>(f_simple,b_short))) 
+	events.latency_round = round.(events.latency) # to remove the automatic 0.5 splitting thingies
+	
+	
+	designmatrix!(ufmodel,events,eventfields=[:latency_round],eventcolumn="type");
+
+end;
+
+# ╔═╡ 678fe896-a03b-454e-a9e1-7ad98292b7a6
+events
+
+# ╔═╡ 2e4c5a9d-35e8-42cf-a90a-c341cde057cc
+u_epoch,tmpUTimes = Unfold.epoch(
+	data=Matrix(designmatrix(ufmodel).Xs'), 
+	tbl=events, 
+	τ=τ, 
+	sfreq=raw.info["sfreq"]
+);
+
+
+# ╔═╡ 6bcf3dd8-6ed6-4854-9525-eba8d396f366
+data_epoch, times = Unfold.epoch(
+	data=data, 
+	tbl=events, 
+	τ=τ, 
+	sfreq=raw.info["sfreq"]
+);
+
+
+# ╔═╡ ce01f8a5-97c2-49db-a6a5-06b9f05fd6b6
+begin
+	@show size(u_epoch)
+	@show size(data_epoch)
+end;
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -96,7 +146,6 @@ AlgebraOfGraphics = "cbdf2221-f076-402e-a563-3d30da359d67"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-JSServe = "824d6782-a2ef-11e9-3a09-e5662e0c26f9"
 PyMNE = "6c5003b2-cbe8-491c-a0d1-70088e6a0fd6"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 StatsModels = "3eaba693-59b7-5ba5-a881-562e759f1c8d"
@@ -108,7 +157,6 @@ AlgebraOfGraphics = "~0.6.7"
 CSV = "~0.10.4"
 CairoMakie = "~0.8.2"
 DataFrames = "~1.3.4"
-JSServe = "~1.2.7"
 PyMNE = "~0.1.2"
 StatsBase = "~0.33.16"
 StatsModels = "~0.6.30"
@@ -633,23 +681,11 @@ git-tree-sha1 = "53bb909d1151e57e2484c3d1b53e19552b887fb2"
 uuid = "42e2da0e-8278-4e71-bc24-59509adca0fe"
 version = "1.0.2"
 
-[[deps.HTTP]]
-deps = ["Base64", "Dates", "IniFile", "Logging", "MbedTLS", "NetworkOptions", "Sockets", "URIs"]
-git-tree-sha1 = "0fa77022fe4b511826b39c894c90daf5fce3334a"
-uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "0.9.17"
-
 [[deps.HarfBuzz_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "Graphite2_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg"]
 git-tree-sha1 = "129acf094d168394e80ee1dc4bc06ec835e510a3"
 uuid = "2e76f6c2-a576-52d4-95c1-20adfe4de566"
 version = "2.8.1+1"
-
-[[deps.Hyperscript]]
-deps = ["Test"]
-git-tree-sha1 = "8d511d5b81240fc8e6802386302675bdf47737b9"
-uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
-version = "0.0.4"
 
 [[deps.ImageCore]]
 deps = ["AbstractFFTs", "ColorVectorSpace", "Colors", "FixedPointNumbers", "Graphics", "MappedArrays", "MosaicViews", "OffsetArrays", "PaddedViews", "Reexport"]
@@ -689,11 +725,6 @@ version = "1.0.0"
 git-tree-sha1 = "f5fc07d4e706b84f72d54eedcc1c13d92fb0871c"
 uuid = "d25df0c9-e2be-5dd7-82c8-3ad0b3e990b9"
 version = "0.1.2"
-
-[[deps.IniFile]]
-git-tree-sha1 = "f550e6e32074c939295eb5ea6de31849ac2c9625"
-uuid = "83e8ac13-25f8-5344-8a64-a9f2b223428f"
-version = "0.5.1"
 
 [[deps.InlineStrings]]
 deps = ["Parsers"]
@@ -778,12 +809,6 @@ deps = ["Dates", "Mmap", "Parsers", "StructTypes", "UUIDs"]
 git-tree-sha1 = "8c1f668b24d999fb47baf80436194fdccec65ad2"
 uuid = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 version = "1.9.4"
-
-[[deps.JSServe]]
-deps = ["Base64", "CodecZlib", "Colors", "HTTP", "Hyperscript", "JSON3", "LinearAlgebra", "Markdown", "MsgPack", "Observables", "RelocatableFolders", "SHA", "Sockets", "Tables", "Test", "UUIDs", "WebSockets", "WidgetsBase"]
-git-tree-sha1 = "961c49293ac6b4e44df3b73bca89c76913ef6b4a"
-uuid = "824d6782-a2ef-11e9-3a09-e5662e0c26f9"
-version = "1.2.7"
 
 [[deps.JpegTurbo]]
 deps = ["CEnum", "FileIO", "ImageCore", "JpegTurbo_jll", "TOML"]
@@ -995,12 +1020,6 @@ git-tree-sha1 = "70e733037bbf02d691e78f95171a1fa08cdc6332"
 uuid = "0a4f8689-d25c-4efe-a92b-7142dfc1aa53"
 version = "0.2.1"
 
-[[deps.MbedTLS]]
-deps = ["Dates", "MbedTLS_jll", "Random", "Sockets"]
-git-tree-sha1 = "1c38e51c3d08ef2278062ebceade0e46cefc96fe"
-uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
-version = "1.0.3"
-
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
@@ -1046,12 +1065,6 @@ version = "0.3.3"
 
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
-
-[[deps.MsgPack]]
-deps = ["Serialization"]
-git-tree-sha1 = "a8cbf066b54d793b9a48c5daa5d586cf2b5bd43d"
-uuid = "99f44e22-a591-53d1-9472-aa23ef4bd671"
-version = "1.1.0"
 
 [[deps.MutableArithmetics]]
 deps = ["LinearAlgebra", "SparseArrays", "Test"]
@@ -1559,11 +1572,6 @@ git-tree-sha1 = "753c5bd161ca2a64da995a21900bcc177bd7d8e4"
 uuid = "6dd1b50a-3aae-11e9-10b5-ef983d2400fa"
 version = "0.8.0"
 
-[[deps.URIs]]
-git-tree-sha1 = "97bbe755a53fe859669cd907f2d96aee8d2c1355"
-uuid = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
-version = "1.3.0"
-
 [[deps.UUIDs]]
 deps = ["Random", "SHA"]
 uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
@@ -1599,18 +1607,6 @@ deps = ["DataAPI", "InlineStrings", "Parsers"]
 git-tree-sha1 = "b1be2855ed9ed8eac54e5caff2afcdb442d52c23"
 uuid = "ea10d353-3f73-51f8-a26c-33c1cb351aa5"
 version = "1.4.2"
-
-[[deps.WebSockets]]
-deps = ["Base64", "Dates", "HTTP", "Logging", "Sockets"]
-git-tree-sha1 = "f91a602e25fe6b89afc93cf02a4ae18ee9384ce3"
-uuid = "104b5d7c-a370-577a-8038-80a2059c5097"
-version = "1.5.9"
-
-[[deps.WidgetsBase]]
-deps = ["Observables"]
-git-tree-sha1 = "30a1d631eb06e8c868c559599f915a62d55c2601"
-uuid = "eead4739-05f7-45a1-878c-cee36b57321c"
-version = "0.1.4"
 
 [[deps.WoodburyMatrices]]
 deps = ["LinearAlgebra", "SparseArrays"]
@@ -1750,7 +1746,6 @@ version = "3.5.0+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═77a0d9f9-82e3-464a-916c-74e4315ecbea
 # ╠═6261439e-4612-11ec-0a26-cbe01fd4243b
 # ╠═c87b6c00-3d09-4b78-bc24-c429a245f6b3
 # ╠═c1704f61-28f9-453e-958d-0a8dc05db708
@@ -1766,5 +1761,12 @@ version = "3.5.0+0"
 # ╠═1e573be6-e394-42a4-8c03-bcad972c78e0
 # ╠═5e1d9864-9a79-494c-970b-1556c4275904
 # ╠═6e1b5e54-86b9-4d3d-b898-bca4402bef1d
+# ╟─5ba473c5-9d56-470a-87a8-d26d387bc58e
+# ╠═12d98571-e4da-4f8f-92a7-d33d6c069490
+# ╠═107f91f1-0159-4eae-ad78-2f70f2363dad
+# ╠═678fe896-a03b-454e-a9e1-7ad98292b7a6
+# ╠═2e4c5a9d-35e8-42cf-a90a-c341cde057cc
+# ╠═6bcf3dd8-6ed6-4854-9525-eba8d396f366
+# ╠═ce01f8a5-97c2-49db-a6a5-06b9f05fd6b6
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
